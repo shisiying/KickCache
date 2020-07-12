@@ -35,25 +35,25 @@ func New(maxBytes int64, onEvicted func(string, Value)) *Cache {
 }
 
 //第一步是从字典中找到对应的双向链表的节点，第二步，将该节点移动到队尾
-func (c *Cache)Get(key string) (value Value,ok bool) {
-	if ele,ok := c.cache[key];ok {
+func (c *Cache) Get(key string) (value Value, ok bool) {
+	if ele, ok := c.cache[key]; ok {
 		c.ll.MoveToFront(ele)
 		kv := ele.Value.(*entry)
-		return kv.value,true
+		return kv.value, true
 	}
 
 	return
 }
 
 func (c *Cache) Add(key string, value Value) {
-	//如果键存在，则更新对应节点的值，并将该节点移到队尾。
-	if ele,ok := c.cache[key];ok {
+	//如果键存在，则更新对应节点的值，并将该节点移到队头。
+	if ele, ok := c.cache[key]; ok {
 		c.ll.MoveToFront(ele)
 		kv := ele.Value.(*entry)
 		c.nbytes += int64(value.Len()) - int64(kv.value.Len())
 		//不存在则是新增场景，首先队尾添加新节点 &entry{key, value}, 并字典中添加 key 和节点的映射关系。
 	} else {
-		ele := c.ll.PushFront(&entry{key,value})
+		ele := c.ll.PushFront(&entry{key, value})
 		c.cache[key] = ele
 		c.nbytes += int64(len(key)) + int64(value.Len())
 	}
@@ -67,16 +67,16 @@ func (c *Cache) Add(key string, value Value) {
 func (c *Cache) RemoveOldest() {
 	//取队首节点，从链表删除
 	ele := c.ll.Back()
-	if ele !=nil {
+	if ele != nil {
 		c.ll.Remove(ele)
 		kv := ele.Value.(*entry)
 		//从字典中c.cache删除该节点的映射关系
-		delete(c.cache,kv.key)
+		delete(c.cache, kv.key)
 		//更新当前所用的内存c.nbytes
 		c.nbytes -= int64(len(kv.key)) + int64((kv.value.Len()))
 		//如果回调函数onEvicted不为nil,则调回调函数
-		if c.OnEvicted !=nil {
-			c.OnEvicted(kv.key,kv.value)
+		if c.OnEvicted != nil {
+			c.OnEvicted(kv.key, kv.value)
 		}
 	}
 }
